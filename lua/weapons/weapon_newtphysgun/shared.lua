@@ -41,4 +41,10 @@ function SWEP:PrimaryAttack()
 	self:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
 end
 
-SWEP.SecondaryAttack = SWEP.PrimaryAttack
+function SWEP:SecondaryAttack() end
+
+function SWEP:OnDrop()
+	self:SetFiring(false)
+	self:SetGrabbedEnt()
+end
+

@@ -1,26 +1,5 @@
 include("shared.lua")
 
-local movetypes = {
-	[MOVETYPE_NONE] = true,
-	[MOVETYPE_NOCLIP] = true,
-	[MOVETYPE_STEP] = true,
-	[MOVETYPE_FLY] = true,
-	[MOVETYPE_PUSH] = true,
-	[MOVETYPE_LADDER] = true
-}
-
-function SWEP:Think()
-	if not self:GetFiring() then return end
-
-	local owner = self:GetOwner()
-	if not owner:IsValid() then return end
-
-	if movetypes[owner:GetMoveType()] then return end
-	if owner:IsFlagSet(FL_ONGROUND) then return end
-
-	owner:SetMoveType(MOVETYPE_FLY) -- fix glitchy falling clientside
-end
-
 local physbeama = Material("sprites/physbeama")
 local physg_glow1 = Material("sprites/physg_glow1")
 local physg_glow2 = Material("sprites/physg_glow2")
@@ -57,7 +36,7 @@ hook.Add("PreDrawEffects", "NewtPhysgun", function()
 		local wep = ply:GetActiveWeapon()
 		if not wep:IsValid() or wep:GetClass() ~= "weapon_newtphysgun" then continue end
 
-		if not wep.GetFiring or not wep:GetFiring() then continue end
+		if not wep:GetFiring() then continue end
 
 		local ent = wep:GetGrabbedEnt()
 		if not ent:IsValid() and not ent:IsWorld() then continue end
@@ -167,7 +146,7 @@ hook.Add("HUDShouldDraw", "NewtPhysgun", function(name)
 	local wep = LocalPlayer():GetActiveWeapon()
 	if not wep:IsValid() or wep:GetClass() ~= "weapon_newtphysgun" then return end
 
-	if not wep.GetFiring or not wep:GetFiring() then return end
+	if not wep:GetFiring() then return end
 
 	return false
 end)

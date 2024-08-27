@@ -70,8 +70,6 @@ function SWEP:Think()
 
 		local phys = ent:GetPhysicsObjectNum(bone)
 		self:SetGrabbedLocalPos(IsValid(phys) and phys:WorldToLocal(pos, shootDir:Angle()) or Vector())
-		self.GrabbedAng = phys:GetAngles() - shootDir:Angle()
-
 		self:SetGrabbedDist(shootPos:Distance(pos))
 
 		if not ent.CPPICanPhysgun or ent:CPPICanPhysgun(owner) then
@@ -81,6 +79,7 @@ function SWEP:Think()
 		self:SetGrabbedEnt()
 		if not ent.CPPICanPhysgun or ent:CPPICanPhysgun(owner) then
 			hook.Run("OnPhysgunFreeze", self, ent:GetPhysicsObjectNum(self:GetGrabbedBone()), ent, owner)
+			self:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
 		end
 		return
 	end
