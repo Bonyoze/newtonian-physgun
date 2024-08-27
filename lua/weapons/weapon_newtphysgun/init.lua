@@ -121,7 +121,7 @@ function SWEP:Think()
 
 	owner:SetVelocity(-force / PLY_MASS - owner:GetVelocity() * 0.00004 * mul)
 
-	if not canForce then return end
+	if not canForce or ent == owner:GetGroundEntity() then return end
 
 	if ent:IsPlayer() then
 		ent:SetVelocity(force / PLY_MASS)
