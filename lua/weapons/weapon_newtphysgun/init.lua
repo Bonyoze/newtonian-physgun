@@ -119,6 +119,8 @@ function SWEP:Think()
 		force = force:GetNormalized() * FORCE_LIMIT
 	end
 
+	if force.z < 0 then owner:SetGroundEntity() end
+
 	owner:SetVelocity(-force / PLY_MASS - owner:GetVelocity() * 0.00004 * mul)
 
 	if not canForce or ent == owner:GetGroundEntity() then return end
