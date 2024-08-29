@@ -40,7 +40,7 @@ hook.Add("PreDrawEffects", "NewtPhysgun", function()
 		local wep = ply:GetActiveWeapon()
 		if not wep:IsValid() or wep:GetClass() ~= "weapon_newtphysgun" then continue end
 
-		if not wep:GetFiring() then continue end
+		if not wep.GetFiring or not wep:GetFiring() then continue end
 
 		local ent = wep:GetGrabbedEnt()
 		if not ent:IsValid() and not ent:IsWorld() then continue end
