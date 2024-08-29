@@ -1,4 +1,4 @@
 # newtonian-physgun
- A F=MA compliant physics gun for Garry's Mod
+Adds a F=MA compliant physics gun to Garry's Mod. Available on the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3319008828).
 
-Originally by [Fasteroid](https://fasteroid.github.io/expression2/fma-physgun)
+Credit goes to Fasteroid for the original idea made in [Expression 2](https://fasteroid.github.io/expression2/fma-physgun).
