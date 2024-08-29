@@ -150,7 +150,7 @@ hook.Add("HUDShouldDraw", "NewtPhysgun", function(name)
 	local wep = LocalPlayer():GetActiveWeapon()
 	if not wep:IsValid() or wep:GetClass() ~= "weapon_newtphysgun" then return end
 
-	if not wep:GetFiring() then return end
+	if not wep.GetFiring or not wep:GetFiring() then return end
 
 	return false
 end)
