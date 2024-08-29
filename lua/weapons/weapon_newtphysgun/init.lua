@@ -30,6 +30,8 @@ local function GetMass(phys)
 end
 
 function SWEP:Think()
+	if (self.NextThinkTime or 0) > CurTime() then return end
+
 	local owner = self:GetOwner()
 	if not owner:IsValid() then return end
 
@@ -45,14 +47,14 @@ function SWEP:Think()
 		return
 	end
 
-	if owner:KeyPressed(IN_ATTACK) and not ent:IsValid() and not ent:IsWorld() then
+	if firing and not ent:IsValid() and not ent:IsWorld() then
 		local shootPos = owner:GetShootPos()
 		local shootDir = owner:GetAimVector()
 
 		owner:LagCompensation(true)
 		local tr = util.TraceLine({
 			start = shootPos,
-			endpos = shootPos + shootDir * MAX_DIST,
+			endpos = shootPos + shootDir * owner:GetInfoNum("newtphysgun_maxrange", 32768),
 			filter = owner,
 			mask = MASK_SHOT
 		})
@@ -72,15 +74,18 @@ function SWEP:Think()
 		self:SetGrabbedLocalPos(IsValid(phys) and phys:WorldToLocal(pos, shootDir:Angle()) or Vector())
 		self:SetGrabbedDist(shootPos:Distance(pos))
 
-		if not ent.CPPICanPhysgun or ent:CPPICanPhysgun(owner) then
+		if owner:GetInfoNum("newtphysgun_freeze", 0) ~= 0 and (not ent.CPPICanPhysgun or ent:CPPICanPhysgun(owner)) then
 			owner:PhysgunUnfreeze()
 		end
 	elseif owner:KeyPressed(IN_ATTACK2) and (ent:IsValid() or ent:IsWorld()) then
 		self:SetGrabbedEnt()
-		if not ent.CPPICanPhysgun or ent:CPPICanPhysgun(owner) then
+		self:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
+		self.NextThinkTime = CurTime() + 0.5
+
+		if owner:GetInfoNum("newtphysgun_freeze", 0) ~= 0 and (not ent.CPPICanPhysgun or ent:CPPICanPhysgun(owner)) then
 			hook.Run("OnPhysgunFreeze", self, ent:GetPhysicsObjectNum(self:GetGrabbedBone()), ent, owner)
-			self:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
 		end
+
 		return
 	end
 
@@ -90,7 +95,7 @@ function SWEP:Think()
 
 	local wheel = owner:GetCurrentCommand():GetMouseWheel()
 	if wheel ~= 0 then
-		dist = math.min(math.max(dist + wheel * owner:GetInfoNum("physgun_wheelspeed", 10), MIN_DIST), MAX_DIST)
+		dist = math.min(math.max(dist + wheel * owner:GetInfoNum("newtphysgun_wheelspeed", 10), MIN_DIST), MAX_DIST)
 		self:SetGrabbedDist(dist)
 	end
 
