@@ -11,8 +11,8 @@ local physg_glow2 = Material("sprites/physg_glow2")
 local num = 30
 local frac = 1 / (num - 1)
 
-local function DrawBeam(pos1, tangent, pos2, clr)
-	clr = clr:ToColor()
+local function DrawBeam(pos1, tangent, pos2, color)
+	color = color:ToColor()
 
 	local time = CurTime()
 	for j = 1, 4 do
@@ -21,55 +21,19 @@ local function DrawBeam(pos1, tangent, pos2, clr)
 		render.SetMaterial(physbeama)
 		render.StartBeam(num)
 		for i = 0, num - 1 do
-			render.AddBeam(math.QuadraticBezier(frac * i, pos1, tangent, pos2), w, t, clr)
+			render.AddBeam(math.QuadraticBezier(frac * i, pos1, tangent, pos2), w, t, color)
 		end
 		render.EndBeam()
 
 		local s = math.random() * 8
 		render.SetMaterial(physg_glow1)
-		render.DrawSprite(pos2, s, s, clr)
+		render.DrawSprite(pos2, s, s, color)
 
 		s = math.random() * 8
 		render.SetMaterial(physg_glow2)
-		render.DrawSprite(pos2, s, s, clr)
+		render.DrawSprite(pos2, s, s, color)
 	end
 end
-
-hook.Add("PreDrawEffects", "NewtPhysgun", function()
-	for _, ply in player.Iterator() do
-		local wep = ply:GetActiveWeapon()
-		if not wep:IsValid() or wep:GetClass() ~= "weapon_newtphysgun" then continue end
-
-		if not wep.GetFiring or not wep:GetFiring() then continue end
-
-		local ent = wep:GetGrabbedEnt()
-		if not ent:IsValid() and not ent:IsWorld() then continue end
-
-		local bone = wep:GetGrabbedBone()
-		local lpos = wep:GetGrabbedLocalPos()
-
-		if hook.Run("DrawPhysgunBeam", ply, wep, true, ent, bone, lpos) == false then continue end
-
-		local obj = wep:LookupAttachment("core")
-		if obj < 1 then continue end
-
-		local pos1 = wep:GetAttachment(obj).Pos
-
-		local tangent = pos1 + ply:GetAimVector() * wep:GetGrabbedDist() / 2
-
-		local pos2
-		if bone == 0 then
-			pos2 = LocalToWorld(lpos, Angle(), ent:GetPos(), ent:GetAngles())
-		else
-			local matrix = ent:GetBoneMatrix(bone) or Matrix()
-			pos2 = LocalToWorld(lpos, Angle(), matrix:GetTranslation(), matrix:GetAngles())
-		end
-
-		local color = ply:GetWeaponColor()
-
-		DrawBeam(pos1, tangent, pos2, color)
-	end
-end)
 
 local function FormatViewModelAttachment(origin, from)
 	local view = render.GetViewSetup()
@@ -111,11 +75,15 @@ local function FormatViewModelAttachment(origin, from)
 	return eyePos
 end
 
-function SWEP:PostDrawViewModel(vm, _, ply)
+local viewModelDrawn = false
+
+function SWEP:ViewModelDrawn(vm)
 	if not self:GetFiring() then return end
 
 	local ent = self:GetGrabbedEnt()
 	if not ent:IsValid() and not ent:IsWorld() then return end
+
+	local ply = LocalPlayer()
 
 	local bone = self:GetGrabbedBone()
 	local lpos = self:GetGrabbedLocalPos()
@@ -142,7 +110,55 @@ function SWEP:PostDrawViewModel(vm, _, ply)
 	local color = ply:GetWeaponColor()
 
 	DrawBeam(pos1, tangent, pos2, color)
+
+	viewModelDrawn = true
 end
+
+hook.Add("PreDrawEffects", "NewtPhysgun", function()
+	local lply
+	if viewModelDrawn then
+		lply = LocalPlayer()
+	end
+
+	for _, ply in player.Iterator() do
+		if viewModelDrawn and ply == lply then continue end
+
+		local wep = ply:GetActiveWeapon()
+		if not wep:IsValid() or wep:GetClass() ~= "weapon_newtphysgun" then continue end
+
+		if not wep.GetFiring or not wep:GetFiring() then continue end
+
+		local ent = wep:GetGrabbedEnt()
+		if not ent:IsValid() and not ent:IsWorld() then continue end
+
+		local bone = wep:GetGrabbedBone()
+		local lpos = wep:GetGrabbedLocalPos()
+
+		if hook.Run("DrawPhysgunBeam", ply, wep, true, ent, bone, lpos) == false then continue end
+
+		local obj = wep:LookupAttachment("core")
+		if obj < 1 then continue end
+
+		local pos1 = wep:GetAttachment(obj).Pos
+
+		local tangent = pos1 + ply:GetAimVector() * wep:GetGrabbedDist() / 2
+
+		local pos2
+		if bone == 0 then
+			pos2 = LocalToWorld(lpos, Angle(), ent:GetPos(), ent:GetAngles())
+		else
+			local matrix = ent:GetBoneMatrix(bone) or Matrix()
+			pos2 = LocalToWorld(lpos, Angle(), matrix:GetTranslation(), matrix:GetAngles())
+		end
+
+		local color = ply:GetWeaponColor()
+
+		DrawBeam(pos1, tangent, pos2, color)
+	end
+
+	-- reset for next frame
+	viewModelDrawn = false
+end)
 
 hook.Add("HUDShouldDraw", "NewtPhysgun", function(name)
 	if name ~= "CHudWeaponSelection" then return end
