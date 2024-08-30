@@ -20,13 +20,13 @@ local movetypes = {
 }
 
 local function GetMass(phys)
-	if not phys:IsMoveable() or not phys:IsMotionEnabled() then return MAX_MASS end -- frozen physobj
+	if not phys:IsMoveable() or not phys:IsMotionEnabled() then return math.huge end -- frozen physobj
 	local ent = phys:GetEntity()
-	if movetypes[ent:GetMoveType()] then return MAX_MASS end -- tough to move
-	if ent:IsWorld() then return MAX_MASS end
-	if ent:IsFlagSet(FL_FROZEN) then return MAX_MASS end -- frozen player
+	if movetypes[ent:GetMoveType()] then return math.huge end -- tough to move
+	if ent:IsWorld() then return math.huge end
+	if ent:IsFlagSet(FL_FROZEN) then return math.huge end -- frozen player
 	if ent:IsPlayer() then return PLY_MASS end
-	return math.min(phys:GetMass(), MAX_MASS)
+	return phys:GetMass()
 end
 
 function SWEP:Think()
@@ -107,13 +107,13 @@ function SWEP:Think()
 
 	local lpos = self:GetGrabbedLocalPos()
 
-	local angVel = phys:GetAngleVelocity()
-	local pointVel = phys:GetVelocity() + phys:LocalToWorld(angVel:GetNormalized():Cross(lpos) * angVel:Length() * math.pi / 180) - phys:GetPos()
+	local pointVel = phys:GetVelocityAtPoint(phys:LocalToWorld(lpos))
 
-	local canForce = true
-	if ent.CPPICanPhysgun then canForce = ent:CPPICanPhysgun(owner) end
+	local mul = GetMass(phys)
 
-	local mul = canForce and GetMass(phys) or MAX_MASS
+	local canForce = mul < math.huge and (not ent.CPPICanPhysgun or ent:CPPICanPhysgun(owner))
+
+	mul = math.min(mul, MAX_MASS)
 
 	local pos = phys:LocalToWorld(lpos)
 
