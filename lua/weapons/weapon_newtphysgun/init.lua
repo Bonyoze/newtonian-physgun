@@ -30,10 +30,14 @@ local function GetMass(phys)
 end
 
 function SWEP:Think()
-	if (self.NextThinkTime or 0) > CurTime() then return end
-
 	local owner = self:GetOwner()
 	if not owner:IsValid() then return end
+
+	if owner:KeyPressed(IN_RELOAD) and owner:GetInfoNum("newtphysgun_freeze", 0) ~= 0 then
+		hook.Run("OnPhysgunReload", self, owner)
+	end
+
+	if (self.NextThinkTime or 0) > CurTime() then return end
 
 	local firing = owner:KeyDown(IN_ATTACK)
 	self:SetFiring(firing)
@@ -43,11 +47,12 @@ function SWEP:Think()
 	if not firing then
 		if ent:IsValid() or ent:IsWorld() then
 			self:SetGrabbedEnt()
+			hook.Run("PhysgunDrop", owner, ent)
 		end
 		return
 	end
 
-	if firing and not ent:IsValid() and not ent:IsWorld() then
+	if not ent:IsValid() and not ent:IsWorld() then
 		local shootPos = owner:GetShootPos()
 		local shootDir = owner:GetAimVector()
 
@@ -65,19 +70,17 @@ function SWEP:Think()
 
 		local pos, bone = tr.HitPos, tr.PhysicsBone
 		bone = bone < ent:GetPhysicsObjectCount() and bone or 0
+		local phys = ent:GetPhysicsObjectNum(bone)
 
 		self:SetGrabbedEnt(ent)
-
 		self:SetGrabbedBone(bone)
-
-		local phys = ent:GetPhysicsObjectNum(bone)
 		self:SetGrabbedLocalPos(IsValid(phys) and phys:WorldToLocal(pos, shootDir:Angle()) or Vector())
 		self:SetGrabbedDist(shootPos:Distance(pos))
 
 		if owner:GetInfoNum("newtphysgun_freeze", 0) ~= 0 and (not ent.CPPICanPhysgun or ent:CPPICanPhysgun(owner)) then
-			owner:PhysgunUnfreeze()
+			phys:EnableMotion(true)
 		end
-	elseif owner:KeyPressed(IN_ATTACK2) and (ent:IsValid() or ent:IsWorld()) then
+	elseif owner:KeyPressed(IN_ATTACK2) then
 		self:SetGrabbedEnt()
 		self:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
 		self.NextThinkTime = CurTime() + 0.5
@@ -86,10 +89,10 @@ function SWEP:Think()
 			hook.Run("OnPhysgunFreeze", self, ent:GetPhysicsObjectNum(self:GetGrabbedBone()), ent, owner)
 		end
 
+		hook.Run("PhysgunDrop", owner, ent)
+
 		return
 	end
-
-	if not ent:IsValid() and not ent:IsWorld() then return end
 
 	local dist = self:GetGrabbedDist()
 
