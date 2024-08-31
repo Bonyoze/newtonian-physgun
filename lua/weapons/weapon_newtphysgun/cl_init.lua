@@ -85,7 +85,7 @@ function SWEP:ViewModelDrawn(vm)
 
 	local ply = LocalPlayer()
 
-	local bone = self:GetGrabbedBone()
+	local bone = self:GetGrabbedPhysBone()
 	local lpos = self:GetGrabbedLocalPos()
 
 	if hook.Run("DrawPhysgunBeam", ply, self, true, ent, bone, lpos) == false then return end
@@ -131,7 +131,7 @@ hook.Add("PreDrawEffects", "NewtPhysgun", function()
 		local ent = wep:GetGrabbedEnt()
 		if not ent:IsValid() and not ent:IsWorld() then continue end
 
-		local bone = wep:GetGrabbedBone()
+		local bone = wep:GetGrabbedPhysBone()
 		local lpos = wep:GetGrabbedLocalPos()
 
 		if hook.Run("DrawPhysgunBeam", ply, wep, true, ent, bone, lpos) == false then continue end

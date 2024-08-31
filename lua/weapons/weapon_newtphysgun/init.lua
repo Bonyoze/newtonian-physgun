@@ -73,7 +73,7 @@ function SWEP:Think()
 		local phys = ent:GetPhysicsObjectNum(bone)
 
 		self:SetGrabbedEnt(ent)
-		self:SetGrabbedBone(bone)
+		self:SetGrabbedPhysBone(bone)
 		self:SetGrabbedLocalPos(IsValid(phys) and phys:WorldToLocal(pos, shootDir:Angle()) or Vector())
 		self:SetGrabbedDist(shootPos:Distance(pos))
 
@@ -86,7 +86,7 @@ function SWEP:Think()
 		self.NextThinkTime = CurTime() + 0.5
 
 		if owner:GetInfoNum("newtphysgun_freeze", 0) ~= 0 and (not ent.CPPICanPhysgun or ent:CPPICanPhysgun(owner)) then
-			hook.Run("OnPhysgunFreeze", self, ent:GetPhysicsObjectNum(self:GetGrabbedBone()), ent, owner)
+			hook.Run("OnPhysgunFreeze", self, ent:GetPhysicsObjectNum(self:GetGrabbedPhysBone()), ent, owner)
 		end
 
 		hook.Run("PhysgunDrop", owner, ent)
@@ -102,7 +102,7 @@ function SWEP:Think()
 		self:SetGrabbedDist(dist)
 	end
 
-	local phys = ent:GetPhysicsObjectNum(self:GetGrabbedBone())
+	local phys = ent:GetPhysicsObjectNum(self:GetGrabbedPhysBone())
 	if not IsValid(phys) then return end
 
 	local lpos = self:GetGrabbedLocalPos()

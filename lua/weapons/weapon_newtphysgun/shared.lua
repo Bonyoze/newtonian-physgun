@@ -27,9 +27,12 @@ SWEP.UseHands = true
 function SWEP:SetupDataTables()
 	self:NetworkVar("Bool", 0, "Firing")
 	self:NetworkVar("Entity", 0, "GrabbedEnt")
-	self:NetworkVar("Int", 0, "GrabbedBone")
+	self:NetworkVar("Int", 0, "GrabbedPhysBone")
 	self:NetworkVar("Vector", 0, "GrabbedLocalPos")
 	self:NetworkVar("Float", 0, "GrabbedDist")
+	if CLIENT then
+		self:NetworkVarNotify("Firing", self.OnFiringChanged)
+	end
 end
 
 function SWEP:Initialize()
