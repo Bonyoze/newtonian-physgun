@@ -15,13 +15,13 @@ local function DrawBeam(pos1, tangent, pos2, color)
 	color = color:ToColor()
 
 	local time = CurTime()
-	for j = 1, 4 do
+	for i = 1, 4 do
 		local w = math.random() * 4
-		local t = (time + j) % 4 / 4
+		local t = (time + i) % 4 / 4
 		render.SetMaterial(physbeama)
 		render.StartBeam(num)
-		for i = 0, num - 1 do
-			render.AddBeam(math.QuadraticBezier(frac * i, pos1, tangent, pos2), w, t, color)
+		for j = 0, num - 1 do
+			render.AddBeam(math.QuadraticBezier(frac * j, pos1, tangent, pos2), w, t, color)
 		end
 		render.EndBeam()
 
@@ -75,6 +75,26 @@ local function FormatViewModelAttachment(origin, from)
 	return eyePos
 end
 
+local angle_zero = Angle()
+
+local function LocalToWorldBone(lpos, ent, bone)
+	if ent:GetSolid() == SOLID_BBOX then return ent:GetPos() + lpos end -- fix for players and most npcs
+	bone = ent:TranslatePhysBoneToBone(bone)
+	local matrix = ent:GetBoneMatrix(bone)
+	if not matrix then return LocalToWorld(lpos, angle_zero, ent:GetPos(), ent:GetAngles()) end
+	return LocalToWorld(lpos, angle_zero, matrix:GetTranslation(), matrix:GetAngles())
+end
+
+local activeWeps = {}
+
+function SWEP:OnFiringChanged(_, _, firing)
+	if firing then
+		activeWeps[self] = true
+	else
+		activeWeps[self] = nil
+	end
+end
+
 local viewModelDrawn = false
 
 function SWEP:ViewModelDrawn(vm)
@@ -83,12 +103,12 @@ function SWEP:ViewModelDrawn(vm)
 	local ent = self:GetGrabbedEnt()
 	if not ent:IsValid() and not ent:IsWorld() then return end
 
-	local ply = LocalPlayer()
+	local owner = LocalPlayer()
 
 	local bone = self:GetGrabbedPhysBone()
 	local lpos = self:GetGrabbedLocalPos()
 
-	if hook.Run("DrawPhysgunBeam", ply, self, true, ent, bone, lpos) == false then return end
+	if hook.Run("DrawPhysgunBeam", owner, self, true, ent, bone, lpos) == false then return end
 
 	local obj = vm:LookupAttachment("muzzle")
 	if obj < 1 then return end
@@ -96,18 +116,12 @@ function SWEP:ViewModelDrawn(vm)
 	local pos1 = vm:GetAttachment(obj).Pos
 	pos1 = FormatViewModelAttachment(pos1)
 
-	local tangent = pos1 + ply:GetAimVector() * self:GetGrabbedDist() / 2
+	local tangent = pos1 + owner:GetAimVector() * self:GetGrabbedDist() / 2
 
-	local pos2
-	if bone == 0 then
-		pos2 = LocalToWorld(lpos, Angle(), ent:GetPos(), ent:GetAngles())
-	else
-		local matrix = ent:GetBoneMatrix(bone) or Matrix()
-		pos2 = LocalToWorld(lpos, Angle(), matrix:GetTranslation(), matrix:GetAngles())
-	end
+	local pos2 = LocalToWorldBone(lpos, ent, bone)
 	pos2 = FormatViewModelAttachment(pos2)
 
-	local color = ply:GetWeaponColor()
+	local color = owner:GetWeaponColor()
 
 	DrawBeam(pos1, tangent, pos2, color)
 
@@ -120,13 +134,14 @@ hook.Add("PreDrawEffects", "NewtPhysgun", function()
 		lply = LocalPlayer()
 	end
 
-	for _, ply in player.Iterator() do
-		if viewModelDrawn and ply == lply then continue end
+	for wep in pairs(activeWeps) do
+		if not wep:IsValid() then activeWeps[wep] = nil continue end
 
-		local wep = ply:GetActiveWeapon()
-		if not wep:IsValid() or wep:GetClass() ~= "weapon_newtphysgun" then continue end
+		local owner = wep:GetOwner()
+		if not owner:IsValid() then continue end
 
-		if not wep.GetFiring or not wep:GetFiring() then continue end
+		-- if the local player already drew the beam with the view model, don't draw it again
+		if viewModelDrawn and owner == lply then continue end
 
 		local ent = wep:GetGrabbedEnt()
 		if not ent:IsValid() and not ent:IsWorld() then continue end
@@ -134,24 +149,18 @@ hook.Add("PreDrawEffects", "NewtPhysgun", function()
 		local bone = wep:GetGrabbedPhysBone()
 		local lpos = wep:GetGrabbedLocalPos()
 
-		if hook.Run("DrawPhysgunBeam", ply, wep, true, ent, bone, lpos) == false then continue end
+		if hook.Run("DrawPhysgunBeam", owner, wep, true, ent, bone, lpos) == false then continue end
 
 		local obj = wep:LookupAttachment("core")
 		if obj < 1 then continue end
 
 		local pos1 = wep:GetAttachment(obj).Pos
 
-		local tangent = pos1 + ply:GetAimVector() * wep:GetGrabbedDist() / 2
+		local tangent = pos1 + owner:GetAimVector() * wep:GetGrabbedDist() / 2
 
-		local pos2
-		if bone == 0 then
-			pos2 = LocalToWorld(lpos, Angle(), ent:GetPos(), ent:GetAngles())
-		else
-			local matrix = ent:GetBoneMatrix(bone) or Matrix()
-			pos2 = LocalToWorld(lpos, Angle(), matrix:GetTranslation(), matrix:GetAngles())
-		end
+		local pos2 = LocalToWorldBone(lpos, ent, bone)
 
-		local color = ply:GetWeaponColor()
+		local color = owner:GetWeaponColor()
 
 		DrawBeam(pos1, tangent, pos2, color)
 	end
@@ -160,13 +169,17 @@ hook.Add("PreDrawEffects", "NewtPhysgun", function()
 	viewModelDrawn = false
 end)
 
+-- prevent the local player selecting weapons while firing so they can wheel scroll
 hook.Add("HUDShouldDraw", "NewtPhysgun", function(name)
 	if name ~= "CHudWeaponSelection" then return end
 
-	local wep = LocalPlayer():GetActiveWeapon()
+	local lply = LocalPlayer()
+	if not lply:IsValid() then return end
+
+	local wep = lply:GetActiveWeapon()
 	if not wep:IsValid() or wep:GetClass() ~= "weapon_newtphysgun" then return end
 
-	if not wep.GetFiring or not wep:GetFiring() then return end
+	if not activeWeps[wep] then return end
 
 	return false
 end)

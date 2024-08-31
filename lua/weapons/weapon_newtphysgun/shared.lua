@@ -51,3 +51,7 @@ function SWEP:OnDrop()
 	self:SetGrabbedEnt()
 end
 
+function SWEP:OnRemove()
+	self:SetFiring(false)
+	self:SetGrabbedEnt()
+end
