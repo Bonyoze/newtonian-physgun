@@ -169,17 +169,14 @@ hook.Add("PreDrawEffects", "NewtPhysgun", function()
 	viewModelDrawn = false
 end)
 
--- prevent the local player selecting weapons while firing so they can wheel scroll
-hook.Add("HUDShouldDraw", "NewtPhysgun", function(name)
-	if name ~= "CHudWeaponSelection" then return end
+local mWheelBtns = {
+	[MOUSE_WHEEL_UP] = true,
+	[MOUSE_WHEEL_DOWN] = true
+}
 
-	local lply = LocalPlayer()
-	if not lply:IsValid() then return end
-
-	local wep = lply:GetActiveWeapon()
-	if not wep:IsValid() or wep:GetClass() ~= "weapon_newtphysgun" then return end
-
-	if not activeWeps[wep] then return end
-
-	return false
+-- prevent binds if mouse scrolling (like invnext and invprev)
+hook.Add("PlayerBindPress", "NewtPhysgun", function(ply, _, _, code)
+	if mWheelBtns[code] and activeWeps[ply:GetActiveWeapon()] then
+		return true
+	end
 end)
