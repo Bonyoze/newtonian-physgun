@@ -105,17 +105,15 @@ function SWEP:Think()
 	local phys = ent:GetPhysicsObjectNum(self:GetGrabbedPhysBone())
 	if not IsValid(phys) then return end
 
-	local lpos = self:GetGrabbedLocalPos()
+	local pos = phys:LocalToWorld(self:GetGrabbedLocalPos())
 
-	local pointVel = phys:GetVelocityAtPoint(phys:LocalToWorld(lpos))
+	local pointVel = phys:GetVelocityAtPoint(pos)
 
 	local mul = GetMass(phys)
 
 	local canForce = mul < math.huge and (not ent.CPPICanPhysgun or ent:CPPICanPhysgun(owner))
 
 	mul = math.min(mul, MAX_MASS)
-
-	local pos = phys:LocalToWorld(lpos)
 
 	local force = owner:GetShootPos() + owner:GetAimVector() * dist - pos
 	force = force - pointVel * 0.1
