@@ -77,7 +77,7 @@ function SWEP:Think()
 		self:SetGrabbedLocalPos(IsValid(phys) and phys:WorldToLocal(pos, shootDir:Angle()) or Vector())
 		self:SetGrabbedDist(shootPos:Distance(pos))
 
-		if owner:GetInfoNum("newtphysgun_freeze", 0) ~= 0 and (not ent.CPPICanPhysgun or ent:CPPICanPhysgun(owner)) then
+		if IsValid(phys) and owner:GetInfoNum("newtphysgun_freeze", 0) ~= 0 and (not ent.CPPICanPhysgun or ent:CPPICanPhysgun(owner)) then
 			phys:EnableMotion(true)
 		end
 	elseif owner:KeyPressed(IN_ATTACK2) then
