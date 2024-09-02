@@ -72,6 +72,8 @@ function SWEP:Think()
 		ent = tr.Entity
 		if not ent:IsValid() and not ent:IsWorld() then return end
 
+		hook.Run("PhysgunPickup", owner, ent)
+
 		local pos, bone = tr.HitPos, tr.PhysicsBone
 		bone = bone < ent:GetPhysicsObjectCount() and bone or 0
 		local phys = ent:GetPhysicsObjectNum(bone)
@@ -84,6 +86,8 @@ function SWEP:Think()
 		if IsValid(phys) and owner:GetInfoNum("newtphysgun_freeze", 0) ~= 0 and HasPermission(owner, ent) then
 			phys:EnableMotion(true)
 		end
+
+		hook.Run("OnPhysgunPickup", owner, ent)
 	elseif owner:KeyPressed(IN_ATTACK2) then
 		self:SetGrabbedEnt()
 		self:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
