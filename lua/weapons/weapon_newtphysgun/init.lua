@@ -19,6 +19,10 @@ local movetypes = {
 	[MOVETYPE_LADDER] = true
 }
 
+local function HasPermission(owner, ent)
+	return not ent.CPPICanPhysgun or ent:CPPICanPhysgun(owner)
+end
+
 local function GetMass(phys)
 	if not phys:IsMoveable() or not phys:IsMotionEnabled() then return math.huge end -- frozen physobj
 	local ent = phys:GetEntity()
@@ -77,7 +81,7 @@ function SWEP:Think()
 		self:SetGrabbedLocalPos(IsValid(phys) and phys:WorldToLocal(pos, shootDir:Angle()) or Vector())
 		self:SetGrabbedDist(shootPos:Distance(pos))
 
-		if IsValid(phys) and owner:GetInfoNum("newtphysgun_freeze", 0) ~= 0 and (not ent.CPPICanPhysgun or ent:CPPICanPhysgun(owner)) then
+		if IsValid(phys) and owner:GetInfoNum("newtphysgun_freeze", 0) ~= 0 and HasPermission(owner, ent) then
 			phys:EnableMotion(true)
 		end
 	elseif owner:KeyPressed(IN_ATTACK2) then
@@ -85,7 +89,7 @@ function SWEP:Think()
 		self:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
 		self.NextThinkTime = CurTime() + 0.5
 
-		if owner:GetInfoNum("newtphysgun_freeze", 0) ~= 0 and (not ent.CPPICanPhysgun or ent:CPPICanPhysgun(owner)) then
+		if owner:GetInfoNum("newtphysgun_freeze", 0) ~= 0 and HasPermission(owner, ent) then
 			hook.Run("OnPhysgunFreeze", self, ent:GetPhysicsObjectNum(self:GetGrabbedPhysBone()), ent, owner)
 		end
 
@@ -109,9 +113,9 @@ function SWEP:Think()
 
 	local pointVel = phys:GetVelocityAtPoint(pos)
 
-	local mul = GetMass(phys)
+	local mul = HasPermission(owner, ent) and GetMass(phys) or math.huge
 
-	local canForce = mul < math.huge and (not ent.CPPICanPhysgun or ent:CPPICanPhysgun(owner))
+	local canForce = mul < math.huge
 
 	mul = math.min(mul, MAX_MASS)
 
