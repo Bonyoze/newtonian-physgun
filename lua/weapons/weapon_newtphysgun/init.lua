@@ -8,7 +8,7 @@ local MAX_DIST = 32768
 local PLY_MASS = 85
 local MAX_MASS = 1000
 
-local FORCE_LIMIT = 500000
+local SPEED_LIMIT = 4000
 
 local movetypes = {
 	[MOVETYPE_NONE] = true,
@@ -21,6 +21,14 @@ local movetypes = {
 
 local function HasPermission(owner, ent)
 	return not ent.CPPICanPhysgun or ent:CPPICanPhysgun(owner)
+end
+
+local function CheckEntityVelocity(vel)
+	if vel.x > -SPEED_LIMIT and vel.x < SPEED_LIMIT and
+		vel.y > -SPEED_LIMIT and vel.y < SPEED_LIMIT and
+		vel.z > -SPEED_LIMIT and vel.z < SPEED_LIMIT
+	then return end
+	vel:Mul(SPEED_LIMIT / vel:Length())
 end
 
 local function GetMass(phys)
@@ -122,18 +130,18 @@ function SWEP:Think()
 	force = force + owner:GetVelocity() * 0.05
 	force = force * mul
 
-	if force:Length() > FORCE_LIMIT then
-		force = force:GetNormalized() * FORCE_LIMIT
-	end
-
-	if force.z < 0 then owner:SetGroundEntity() end
-
-	owner:SetVelocity(-force / PLY_MASS - owner:GetVelocity() * 0.00004 * mul)
+	local ownerVel = -force / PLY_MASS + owner:GetAbsVelocity()
+	CheckEntityVelocity(ownerVel)
+	if ownerVel.z > 0 then owner:SetGroundEntity() end
+	owner:SetLocalVelocity(ownerVel)
 
 	if not canForce or ent == owner:GetGroundEntity() then return end
 
 	if ent:IsPlayer() then
-		ent:SetVelocity(force / PLY_MASS)
+		local entVel = force / PLY_MASS + ent:GetAbsVelocity()
+		CheckEntityVelocity(entVel)
+		if entVel.z > 0 then ent:SetGroundEntity() end
+		ent:SetLocalVelocity(entVel)
 	else
 		phys:Wake()
 		phys:ApplyForceOffset(force, pos)
