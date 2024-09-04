@@ -42,14 +42,9 @@ local function GetMass(phys)
 end
 
 function SWEP:Think()
-	local owner = self:GetOwner()
-	if not owner:IsValid() then return end
-
-	if owner:KeyPressed(IN_RELOAD) and owner:GetInfoNum("newtphysgun_freeze", 0) ~= 0 then
-		hook.Run("OnPhysgunReload", self, owner)
-	end
-
 	if (self.NextThinkTime or 0) > CurTime() then return end
+
+	local owner = self:GetOwner()
 
 	local firing = owner:KeyDown(IN_ATTACK)
 	self:SetFiring(firing)
@@ -145,5 +140,12 @@ function SWEP:Think()
 	else
 		phys:Wake()
 		phys:ApplyForceOffset(force, pos)
+	end
+end
+
+function SWEP:Reload()
+	local owner = self:GetOwner()
+	if owner:GetInfoNum("newtphysgun_freeze", 0) ~= 0 then
+		hook.Run("OnPhysgunReload", self, owner)
 	end
 end
