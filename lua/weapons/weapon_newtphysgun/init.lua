@@ -109,9 +109,13 @@ function SWEP:Think()
 	local phys = ent:GetPhysicsObjectNum(self:GetGrabbedPhysBone())
 	if not IsValid(phys) then return end
 
+	local isPlayer = ent:IsPlayer()
+
+	local vel = isPlayer and ent:GetVelocity() or phys:GetVelocity()
+
 	local pos = phys:LocalToWorld(self:GetGrabbedLocalPos())
 
-	local pointVel = phys:GetVelocityAtPoint(pos)
+	local pointVel = isPlayer and vel or phys:GetVelocityAtPoint(pos)
 
 	local mul = HasPermission(owner, ent) and GetMass(phys) or math.huge
 
@@ -121,7 +125,7 @@ function SWEP:Think()
 
 	local force = owner:GetShootPos() + owner:GetAimVector() * dist - pos
 	force = force - pointVel * 0.1
-	force = force - phys:GetVelocity() * 0.05
+	force = force - vel * 0.05
 	force = force + owner:GetVelocity() * 0.05
 	force = force * mul
 
@@ -132,7 +136,7 @@ function SWEP:Think()
 
 	if not canForce or ent == owner:GetGroundEntity() then return end
 
-	if ent:IsPlayer() then
+	if isPlayer then
 		local entVel = force / PLY_MASS + ent:GetAbsVelocity()
 		CheckEntityVelocity(entVel)
 		if entVel.z > 0 then ent:SetGroundEntity() end
