@@ -91,7 +91,7 @@ function SWEP:Think()
 		self:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
 		self.NextThinkTime = CurTime() + 0.5
 
-		if owner:GetInfoNum("newtphysgun_freeze", 0) ~= 0 and HasPermission(owner, ent) then
+		if not ent:IsPlayer() and owner:GetInfoNum("newtphysgun_freeze", 0) ~= 0 and HasPermission(owner, ent) then
 			hook.Run("OnPhysgunFreeze", self, ent:GetPhysicsObjectNum(self:GetGrabbedPhysBone()), ent, owner)
 		end
 
