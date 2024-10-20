@@ -8,6 +8,13 @@ local physbeama = Material("sprites/physbeama")
 local physg_glow1 = Material("sprites/physg_glow1")
 local physg_glow2 = Material("sprites/physg_glow2")
 
+local function QuadraticBezier(frac, p0, p1, p2)
+	local frac2 = frac * frac
+	local inv = 1 - frac
+	local inv2 = inv * inv
+	return inv2 * p0 + 2 * inv * frac * p1 + frac2 * p2
+end
+
 local num = 30
 local frac = 1 / (num - 1)
 
@@ -21,7 +28,7 @@ local function DrawBeam(pos1, tangent, pos2, color)
 		render.SetMaterial(physbeama)
 		render.StartBeam(num)
 		for j = 0, num - 1 do
-			render.AddBeam(math.QuadraticBezier(frac * j, pos1, tangent, pos2), w, t, color)
+			render.AddBeam(QuadraticBezier(frac * j, pos1, tangent, pos2), w, t, color)
 		end
 		render.EndBeam()
 
