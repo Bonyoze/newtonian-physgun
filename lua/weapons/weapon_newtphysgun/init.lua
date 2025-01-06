@@ -19,6 +19,11 @@ local movetypes = {
 	[MOVETYPE_LADDER] = true
 }
 
+local function IsAllowedEntity(ent)
+	if not ent:IsValid() then return ent:IsWorld() end
+	return ent:GetInternalVariable("m_lifeState") == 0
+end
+
 local function HasPermission(owner, ent)
 	return not ent.CPPICanPhysgun or ent:CPPICanPhysgun(owner)
 end
@@ -58,7 +63,7 @@ function SWEP:Think()
 		return
 	end
 
-	if not ent:IsValid() and not ent:IsWorld() then
+	if not IsAllowedEntity(ent) then
 		local shootPos = owner:GetShootPos()
 		local shootDir = owner:GetAimVector()
 
@@ -72,7 +77,7 @@ function SWEP:Think()
 		owner:LagCompensation(false)
 
 		ent = tr.Entity
-		if not ent:IsValid() and not ent:IsWorld() then return end
+		if not IsAllowedEntity(ent) then return end
 
 		local pos, bone = tr.HitPos, tr.PhysicsBone
 		bone = bone < ent:GetPhysicsObjectCount() and bone or 0
