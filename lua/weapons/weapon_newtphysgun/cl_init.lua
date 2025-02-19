@@ -176,23 +176,6 @@ hook.Add("PreDrawEffects", "NewtPhysgun", function()
 	viewModelDrawn = false
 end)
 
-local movetypes = {
-	[MOVETYPE_NONE] = true,
-	[MOVETYPE_NOCLIP] = true,
-	[MOVETYPE_STEP] = true,
-	[MOVETYPE_FLY] = true,
-	[MOVETYPE_PUSH] = true,
-	[MOVETYPE_LADDER] = true
-}
-
--- fix glitchy clientside falling
-hook.Add("FinishMove", "NewtPhysgun", function(ply, mv)
-	if activeWeps[ply:GetActiveWeapon()] and not movetypes[ply:GetMoveType()] and not ply:IsOnGround() then
-		ply:SetNetworkOrigin(mv:GetOrigin())
-		return true
-	end
-end)
-
 local mWheelBtns = {
 	[MOUSE_WHEEL_UP] = true,
 	[MOUSE_WHEEL_DOWN] = true

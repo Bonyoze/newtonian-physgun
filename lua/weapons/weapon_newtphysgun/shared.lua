@@ -198,12 +198,12 @@ function SWEP:Think()
 		local isPlayer = ent:IsPlayer()
 		local vel = isPlayer and ent:GetVelocity() or ent:GetVelocity()
 		local pos = ent:LocalToWorld(self:GetGrabbedLocalPos())
-	
+
 		local force = owner:GetShootPos() + owner:GetAimVector() * dist - pos
 		force = force - vel * 0.05
 		force = force + owner:GetVelocity() * 0.05
 		force = force * MAX_MASS
-	
+
 		local ownerVel = -force / PLY_MASS + owner:GetAbsVelocity()
 		CheckEntityVelocity(ownerVel)
 		if ownerVel.z > 0 then owner:SetGroundEntity() end
