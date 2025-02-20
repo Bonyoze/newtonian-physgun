@@ -188,10 +188,12 @@ function SWEP:Think()
 
 	local dist = self:GetGrabbedDist()
 
-	local wheel = owner:GetCurrentCommand():GetMouseWheel()
-	if wheel ~= 0 then
-		dist = math.min(math.max(dist + wheel * owner:GetInfoNum("newtphysgun_wheelspeed", 10), MIN_DIST), MAX_DIST)
-		self:SetGrabbedDist(dist)
+	if SERVER then
+		local wheel = owner:GetCurrentCommand():GetMouseWheel()
+		if wheel ~= 0 then
+			dist = math.min(math.max(dist + wheel * owner:GetInfoNum("newtphysgun_wheelspeed", 10), MIN_DIST), MAX_DIST)
+			self:SetGrabbedDist(dist)
+		end
 	end
 
 	if ent:IsWorld() and (not IsValid(self:GetGrabbedEntServer()) or self:GetGrabbedEntServer() == ent) then
