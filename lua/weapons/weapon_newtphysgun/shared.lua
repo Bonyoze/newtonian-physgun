@@ -68,6 +68,7 @@ local MAX_MASS = 1000
 
 local SPEED_LIMIT = 4000
 
+-- movetypes that make a player tough to move
 local movetypes = {
 	[MOVETYPE_NONE] = true,
 	[MOVETYPE_NOCLIP] = true,
@@ -75,6 +76,14 @@ local movetypes = {
 	[MOVETYPE_FLY] = true,
 	[MOVETYPE_PUSH] = true,
 	[MOVETYPE_LADDER] = true
+}
+
+-- npcs that can exist with physics after death
+local npcs = {
+	npc_combine_camera = true,
+	npc_turret_ceiling = true,
+	npc_turret_floor = true,
+	npc_turret_floor_resistance = true
 }
 
 local function GetTargetEntity(ent)
@@ -85,7 +94,8 @@ end
 
 local function IsAllowedEntity(ent)
 	if not ent:IsValid() then return ent:IsWorld() end
-	if SERVER then return ent:GetInternalVariable("m_lifeState") == 0 end -- avoid staying held onto npcs for a few seconds after it dies
+	-- avoid holding onto certain npcs that exist without physics for a few seconds after death
+	if SERVER then return npcs[ent:GetClass()] or ent:GetInternalVariable("m_lifeState") == 0 end
 	return true
 end
 
