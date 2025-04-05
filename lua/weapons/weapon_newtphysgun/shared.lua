@@ -77,9 +77,16 @@ local movetypes = {
 	[MOVETYPE_LADDER] = true
 }
 
+local function GetTargetEntity(ent)
+	local parent = ent:GetParent()
+	if parent:IsValid() then return GetTargetEntity(parent) end
+	return ent
+end
+
 local function IsAllowedEntity(ent)
 	if not ent:IsValid() then return ent:IsWorld() end
-	return ent:GetInternalVariable("m_lifeState") == 0
+	if SERVER then return ent:GetInternalVariable("m_lifeState") == 0 end -- avoid staying held onto npcs for a few seconds after it dies
+	return true
 end
 
 local function HasPermission(owner, ent)
@@ -133,11 +140,11 @@ function SWEP:Think()
 		if range == 0 then range = 32768 end
 
 		owner:LagCompensation(true)
-		local tr = util.TraceLine({
+		local tr = util.TraceHull({ -- util.TraceLine won't hit parented entities but util.TraceHull will
 			start = shootPos,
 			endpos = shootPos + shootDir * range,
 			filter = owner,
-			mask = MASK_SHOT
+			mask = MASK_SHOT_HULL -- allows grabbing whatever a bullet can hit (including "grate" props)
 		})
 		owner:LagCompensation(false)
 
@@ -145,28 +152,30 @@ function SWEP:Think()
 		if not IsAllowedEntity(ent) then return end
 
 		if SERVER then
-			local pos, bone = tr.HitPos, tr.PhysicsBone
-			bone = bone < ent:GetPhysicsObjectCount() and bone or 0
+			-- try get the root parent entity so we can grab parented entities correctly (except for ragdolls which seem to ignore being parented)
+			local target = ent:GetPhysicsObjectCount() <= 1 and GetTargetEntity(ent) or ent
 
-			local phys = ent:GetPhysicsObjectNum(bone)
+			local pos = tr.HitPos
+			local bone = ent == target and tr.PhysicsBone or 0 -- use the first physobj if the entity is parented
+
+			local phys = target:GetPhysicsObjectNum(bone)
 			local isValidPhysics = IsValid(phys)
 
 			self:SetGrabbedEnt(ent)
-			self:SetGrabbedEntServer(ent)
+			self:SetGrabbedEntServer(target)
 			self:SetGrabbedPhysBone(bone)
-			self:SetGrabbedLocalPos((not ent:IsPlayer() and isValidPhysics and ent:GetSolid() ~= SOLID_BBOX) and phys:WorldToLocal(pos) or pos - ent:GetPos())
+			self:SetGrabbedLocalPos((not target:IsPlayer() and isValidPhysics and target:GetSolid() ~= SOLID_BBOX) and phys:WorldToLocal(pos) or pos - target:GetPos())
 			self:SetGrabbedDist(shootPos:Distance(pos))
 
 			if isValidPhysics and owner:GetInfoNum("newtphysgun_freeze", 0) ~= 0 and HasPermission(owner, ent) then
 				phys:EnableMotion(true)
 			end
-		elseif ent:IsWorld() and not self:GetGrabbedEntServer():IsValid() then
+		elseif ent:IsWorld() and not self:GetGrabbedEntServer():IsValid() then -- the world doesn't move so we can easily grab it clientside
 			local pos = tr.HitPos
-			local dist = shootPos:Distance(pos)
 			self:SetGrabbedEnt(ent)
 			self:SetGrabbedPhysBone(0)
 			self:SetGrabbedLocalPos(pos)
-			self:SetGrabbedDist(dist)
+			self:SetGrabbedDist(shootPos:Distance(pos))
 		end
 	elseif owner:KeyPressed(IN_ATTACK2) then
 		self:SetGrabbedEnt()
@@ -192,6 +201,7 @@ function SWEP:Think()
 		end
 	end
 
+	-- world grabbing with clientside prediction
 	if ent:IsWorld() and not self:GetGrabbedEntServer():IsValid() then
 		local pos = self:GetGrabbedLocalPos()
 
@@ -208,18 +218,23 @@ function SWEP:Think()
 
 	if CLIENT then return end
 
-	local isPlayer = ent:IsPlayer()
+	local target = self:GetGrabbedEntServer()
+	if not target:IsValid() and not target:IsWorld() then return end
 
-	local phys = ent:GetPhysicsObjectNum(self:GetGrabbedPhysBone())
+	local isPlayer = target:IsPlayer()
+
+	local phys = target:GetPhysicsObjectNum(self:GetGrabbedPhysBone())
 	local isValidPhysics = IsValid(phys)
 
-	local isValidProp = not isPlayer and isValidPhysics and ent:GetSolid() ~= SOLID_BBOX
+	-- we can't use the physobj when calculating point velocity for players and certain npcs
+	local isValidProp = not isPlayer and isValidPhysics and target:GetSolid() ~= SOLID_BBOX
 
-	local vel = isValidProp and phys:GetVelocity() or ent:GetVelocity()
-	local pos = isValidProp and phys:LocalToWorld(self:GetGrabbedLocalPos()) or ent:GetPos() + self:GetGrabbedLocalPos()
+	local vel = isValidProp and phys:GetVelocity() or target:GetVelocity()
+	local pos = isValidProp and phys:LocalToWorld(self:GetGrabbedLocalPos()) or target:GetPos() + self:GetGrabbedLocalPos()
 	local pointVel = isValidProp and phys:GetVelocityAtPoint(pos) or vel
 
-	local mul = HasPermission(owner, ent) and isValidPhysics and GetMass(phys) or math.huge
+	-- if the entity's physobj is invalid we can't get its mass and if it's parented we won't be able to move it
+	local mul = isValidPhysics and ent == target and HasPermission(owner, ent) and GetMass(phys) or math.huge
 	local canForce = mul < math.huge
 	mul = math.min(mul, MAX_MASS)
 
@@ -234,7 +249,7 @@ function SWEP:Think()
 	if ownerVel.z > 10 then owner:SetGroundEntity() end
 	owner:SetLocalVelocity(ownerVel)
 
-	if not canForce or ent == owner:GetGroundEntity() then return end
+	if not canForce or ent == owner:GetGroundEntity() then return end -- ground entity check mostly prevents prop surfing
 
 	if isPlayer then
 		local entVel = force / PLY_MASS + ent:GetAbsVelocity()

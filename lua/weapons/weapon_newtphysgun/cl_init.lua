@@ -85,7 +85,7 @@ end
 local angle_zero = Angle()
 
 local function LocalToWorldBone(lpos, ent, bone)
-	if ent:GetSolid() == SOLID_BBOX then return ent:GetPos() + lpos end -- fix for players and most npcs
+	if ent:GetSolid() == SOLID_BBOX then return ent:GetPos() + lpos end -- fix for players and certain npcs
 	bone = ent:TranslatePhysBoneToBone(bone)
 	local matrix = ent:GetBoneMatrix(bone)
 	if not matrix then return LocalToWorld(lpos, angle_zero, ent:GetPos(), ent:GetAngles()) end
@@ -110,6 +110,9 @@ function SWEP:ViewModelDrawn(vm)
 	local ent = self:GetGrabbedEnt()
 	if not ent:IsValid() and not ent:IsWorld() then return end
 
+	local target = self:GetGrabbedEntServer()
+	if not target:IsValid() and not target:IsWorld() then return end
+
 	local owner = LocalPlayer()
 
 	local bone = self:GetGrabbedPhysBone()
@@ -125,7 +128,7 @@ function SWEP:ViewModelDrawn(vm)
 
 	local tangent = pos1 + owner:GetAimVector() * self:GetGrabbedDist() / 2
 
-	local pos2 = LocalToWorldBone(lpos, ent, bone)
+	local pos2 = LocalToWorldBone(lpos, target, bone)
 	pos2 = FormatViewModelAttachment(pos2)
 
 	local color = owner:GetWeaponColor()
@@ -153,6 +156,9 @@ hook.Add("PreDrawEffects", "NewtPhysgun", function()
 		local ent = wep:GetGrabbedEnt()
 		if not ent:IsValid() and not ent:IsWorld() then continue end
 
+		local target = wep:GetGrabbedEntServer()
+		if not target:IsValid() and not target:IsWorld() then continue end
+
 		local bone = wep:GetGrabbedPhysBone()
 		local lpos = wep:GetGrabbedLocalPos()
 
@@ -165,7 +171,7 @@ hook.Add("PreDrawEffects", "NewtPhysgun", function()
 
 		local tangent = pos1 + owner:GetAimVector() * wep:GetGrabbedDist() / 2
 
-		local pos2 = LocalToWorldBone(lpos, ent, bone)
+		local pos2 = LocalToWorldBone(lpos, target, bone)
 
 		local color = owner:GetWeaponColor()
 
