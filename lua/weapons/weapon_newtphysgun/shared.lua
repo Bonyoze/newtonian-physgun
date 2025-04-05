@@ -104,13 +104,16 @@ local function GetMass(phys)
 	return phys:GetMass()
 end
 
+local isSinglePlayer = game.SinglePlayer()
+
 function SWEP:Think()
 	if self:GetNextThinkTime() > CurTime() then return end
 
 	local owner = self:GetOwner()
 
 	local firing = owner:KeyDown(IN_ATTACK)
-	self:SetFiring(firing)
+	if CLIENT and isSinglePlayer then firing = self:GetFiring() end
+	if self:GetFiring() ~= firing then self:SetFiring(firing) end
 
 	local ent = self:GetGrabbedEnt()
 
