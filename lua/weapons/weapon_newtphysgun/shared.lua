@@ -150,34 +150,50 @@ function SWEP:Think()
 		if range == 0 then range = 32768 end
 
 		owner:LagCompensation(true)
-		local tr = util.TraceHull({ -- util.TraceLine won't hit parented entities but util.TraceHull will
+
+		-- util.TraceLine won't hit parented entities but util.TraceHull will
+		local tr = util.TraceHull({
 			start = shootPos,
 			endpos = shootPos + shootDir * range,
 			filter = owner,
 			mask = MASK_SHOT_HULL -- allows grabbing whatever a bullet can hit (including "grate" props)
 		})
+		ent = tr.Entity
+
+		local parent = ent:GetParent()
+		if not parent:IsValid() and not parent:IsWorld() then
+			-- util.TraceHull won't give useful physbone info when hitting players and certain npcs but util.TraceLine will
+			tr = util.TraceLine({
+				start = shootPos,
+				endpos = shootPos + shootDir * range,
+				filter = owner,
+				mask = MASK_SHOT_HULL
+			})
+			ent = tr.Entity
+		end
+
 		owner:LagCompensation(false)
 
-		ent = tr.Entity
 		if not IsAllowedEntity(ent) then return end
 
 		if SERVER then
 			-- try get the root parent entity so we can grab parented entities correctly (except for ragdolls which seem to ignore being parented)
 			local target = ent:GetPhysicsObjectCount() <= 1 and GetTargetEntity(ent) or ent
 
-			local pos = tr.HitPos
 			local bone = ent == target and tr.PhysicsBone or 0 -- use the first physobj if the entity is parented
+			local matrix = ent == target and ent:GetBoneMatrix(ent:TranslatePhysBoneToBone(bone)) -- don't use bone matrix if the entity is parented
 
-			local phys = target:GetPhysicsObjectNum(bone)
-			local isValidPhysics = IsValid(phys)
+			local pos = tr.HitPos
+			local ang = shootDir:Angle()
 
 			self:SetGrabbedEnt(ent)
 			self:SetGrabbedEntServer(target)
 			self:SetGrabbedPhysBone(bone)
-			self:SetGrabbedLocalPos((not target:IsPlayer() and isValidPhysics and target:GetSolid() ~= SOLID_BBOX) and phys:WorldToLocal(pos) or pos - target:GetPos())
+			self:SetGrabbedLocalPos(matrix and WorldToLocal(pos, ang, matrix:GetTranslation(), matrix:GetAngles()) or WorldToLocal(pos, ang, target:GetPos(), target:GetAngles()))
 			self:SetGrabbedDist(shootPos:Distance(pos))
 
-			if isValidPhysics and owner:GetInfoNum("newtphysgun_freeze", 0) ~= 0 and HasPermission(owner, ent) then
+			local phys = target:GetPhysicsObjectNum(bone)
+			if IsValid(phys) and owner:GetInfoNum("newtphysgun_freeze", 0) ~= 0 and HasPermission(owner, ent) then
 				phys:EnableMotion(true)
 			end
 		elseif ent:IsWorld() and not self:GetGrabbedEntServer():IsValid() then -- the world doesn't move so we can easily grab it clientside
@@ -233,15 +249,18 @@ function SWEP:Think()
 
 	local isPlayer = target:IsPlayer()
 
-	local phys = target:GetPhysicsObjectNum(self:GetGrabbedPhysBone())
+	local bone = self:GetGrabbedPhysBone()
+	local matrix = ent == target and ent:GetBoneMatrix(ent:TranslatePhysBoneToBone(bone))
+
+	local phys = isPlayer and target:GetPhysicsObject() or target:GetPhysicsObjectNum(bone)
 	local isValidPhysics = IsValid(phys)
 
-	-- we can't use the physobj when calculating point velocity for players and certain npcs
-	local isValidProp = not isPlayer and isValidPhysics and target:GetSolid() ~= SOLID_BBOX
+	local lpos = self:GetGrabbedLocalPos()
+	local lang = owner:EyeAngles()
+	local pos = matrix and LocalToWorld(lpos, lang, matrix:GetTranslation(), matrix:GetAngles()) or LocalToWorld(lpos, lang, target:GetPos(), target:GetAngles())
 
-	local vel = isValidProp and phys:GetVelocity() or target:GetVelocity()
-	local pos = isValidProp and phys:LocalToWorld(self:GetGrabbedLocalPos()) or target:GetPos() + self:GetGrabbedLocalPos()
-	local pointVel = isValidProp and phys:GetVelocityAtPoint(pos) or vel
+	local vel = isValidPhysics and phys:GetVelocity() or target:GetVelocity()
+	local pointVel = isValidPhysics and phys:GetVelocityAtPoint(pos) or vel
 
 	-- if the entity's physobj is invalid we can't get its mass and if it's parented we won't be able to move it
 	local mul = isValidPhysics and ent == target and HasPermission(owner, ent) and GetMass(phys) or math.huge

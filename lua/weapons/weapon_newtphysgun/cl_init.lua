@@ -82,17 +82,14 @@ local function FormatViewModelAttachment(origin, from)
 	return eyePos
 end
 
-local angle_zero = Angle()
-
-local function LocalToWorldBone(lpos, ent, bone)
-	if ent:GetSolid() == SOLID_BBOX then return ent:GetPos() + lpos end -- fix for players and certain npcs
+local function LocalToWorldBone(lpos, lang, ent, target, bone)
 	bone = ent:TranslatePhysBoneToBone(bone)
-	local matrix = ent:GetBoneMatrix(bone)
-	if not matrix then return LocalToWorld(lpos, angle_zero, ent:GetPos(), ent:GetAngles()) end
-	return LocalToWorld(lpos, angle_zero, matrix:GetTranslation(), matrix:GetAngles())
+	local matrix = ent == target and ent:GetBoneMatrix(bone)
+	return matrix and LocalToWorld(lpos, lang, matrix:GetTranslation(), matrix:GetAngles()) or LocalToWorld(lpos, lang, target:GetPos(), target:GetAngles())
 end
 
-local activeWeps = {}
+NewtPhysgun_ActiveWeps = NewtPhysgun_ActiveWeps or {}
+local activeWeps = NewtPhysgun_ActiveWeps
 
 function SWEP:OnFiringChanged(_, _, firing)
 	if firing then
@@ -128,7 +125,7 @@ function SWEP:ViewModelDrawn(vm)
 
 	local tangent = pos1 + owner:GetAimVector() * self:GetGrabbedDist() / 2
 
-	local pos2 = LocalToWorldBone(lpos, target, bone)
+	local pos2 = LocalToWorldBone(lpos, owner:EyeAngles(), ent, target, bone)
 	pos2 = FormatViewModelAttachment(pos2)
 
 	local color = owner:GetWeaponColor()
@@ -171,7 +168,7 @@ hook.Add("PreDrawEffects", "NewtPhysgun", function()
 
 		local tangent = pos1 + owner:GetAimVector() * wep:GetGrabbedDist() / 2
 
-		local pos2 = LocalToWorldBone(lpos, target, bone)
+		local pos2 = LocalToWorldBone(lpos, owner:EyeAngles(), ent, target, bone)
 
 		local color = owner:GetWeaponColor()
 
