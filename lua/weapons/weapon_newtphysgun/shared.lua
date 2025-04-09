@@ -160,8 +160,13 @@ function SWEP:Think()
 		})
 		ent = tr.Entity
 
-		local parent = ent:GetParent()
-		if not parent:IsValid() and not parent:IsWorld() then
+		local valid = IsAllowedEntity(ent)
+		if valid then
+			local parent = ent:GetParent()
+			valid = parent:IsValid() or parent:IsWorld()
+		end
+
+		if not valid then
 			-- util.TraceHull won't give useful physbone info when hitting players and certain npcs but util.TraceLine will
 			tr = util.TraceLine({
 				start = shootPos,
@@ -170,11 +175,12 @@ function SWEP:Think()
 				mask = MASK_SHOT_HULL
 			})
 			ent = tr.Entity
+			valid = IsAllowedEntity(ent)
 		end
 
 		owner:LagCompensation(false)
 
-		if not IsAllowedEntity(ent) then return end
+		if not valid then return end
 
 		if SERVER then
 			-- try get the root parent entity so we can grab parented entities correctly (except for ragdolls which seem to ignore being parented)
