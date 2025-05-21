@@ -168,7 +168,8 @@ function SWEP:Think()
 
 		if not valid then
 			-- util.TraceHull won't give useful physbone info when hitting players and certain npcs but util.TraceLine will
-			tr = util.TraceLine({
+			local TraceLine = util.LegacyTraceLine or util.TraceLine -- a certain addon detours util.TraceLine to use util.TraceHull
+			tr = TraceLine({
 				start = shootPos,
 				endpos = shootPos + shootDir * range,
 				filter = owner,
