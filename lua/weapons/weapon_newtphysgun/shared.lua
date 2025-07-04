@@ -61,7 +61,7 @@ function SWEP:OnRemove()
 end
 
 local MIN_DIST = 40
-local MAX_DIST = 32768
+local MAX_DIST = 56756
 
 local PLY_MASS = 85
 local MAX_MASS = 1000
@@ -146,8 +146,8 @@ function SWEP:Think()
 		local shootPos = owner:GetShootPos()
 		local shootDir = owner:GetAimVector()
 
-		local range = owner:GetInfoNum("newtphysgun_maxrange", 32768)
-		if range == 0 then range = 32768 end
+		local range = owner:GetInfoNum("newtphysgun_maxrange", 56756)
+		if range == 0 then range = 56756 end
 
 		owner:LagCompensation(true)
 

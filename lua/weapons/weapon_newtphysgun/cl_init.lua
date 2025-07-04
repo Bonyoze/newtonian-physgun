@@ -1,6 +1,6 @@
 include("shared.lua")
 
-CreateClientConVar("newtphysgun_maxrange", 32768, true, true, "The maximum range of the newtonian physgun", 128, 32768)
+CreateClientConVar("newtphysgun_maxrange", 56756, true, true, "The maximum range of the newtonian physgun", 128, 56756)
 CreateClientConVar("newtphysgun_wheelspeed", 20, true, true, "The sensitivity of wheel scrolling with the newtonian physgun", -10000, 10000)
 CreateClientConVar("newtphysgun_freeze", 0, true, true, "Should the newtonian physgun freeze/unfreeze like the normal physgun", 0, 1)
 
