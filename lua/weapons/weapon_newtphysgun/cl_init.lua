@@ -150,6 +150,8 @@ hook.Add("PreDrawEffects", "NewtPhysgun", function()
 		-- if the local player already drew the beam with the view model, don't draw it again
 		if viewModelDrawn and owner == lply then continue end
 
+		if wep:GetNoDraw() then continue end
+
 		local ent = wep:GetGrabbedEnt()
 		if not ent:IsValid() and not ent:IsWorld() then continue end
 
