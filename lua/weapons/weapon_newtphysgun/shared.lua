@@ -1,6 +1,7 @@
 SWEP.PrintName = "Newtonian Physics Gun"
 SWEP.Author = "Bonyoze"
 SWEP.Purpose = "A F=MA compliant physgun"
+SWEP.Category = "Other"
 
 SWEP.Spawnable = true
 
