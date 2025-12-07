@@ -147,8 +147,8 @@ function SWEP:Think()
 		local shootPos = owner:GetShootPos()
 		local shootDir = owner:GetAimVector()
 
-		local range = owner:GetInfoNum("newtphysgun_maxrange", 56756)
-		if range == 0 then range = 56756 end
+		local range = owner:GetInfoNum("newtphysgun_maxrange", MAX_DIST)
+		if range == 0 then range = MAX_DIST end
 
 		owner:LagCompensation(true)
 
@@ -230,7 +230,9 @@ function SWEP:Think()
 	if SERVER then
 		local wheel = owner:GetCurrentCommand():GetMouseWheel()
 		if wheel ~= 0 then
-			dist = math.min(math.max(dist + wheel * owner:GetInfoNum("newtphysgun_wheelspeed", 10), MIN_DIST), MAX_DIST)
+			local range = owner:GetInfoNum("newtphysgun_maxrange", MAX_DIST)
+			if range == 0 then range = MAX_DIST end
+			dist = math.min(math.max(dist + wheel * owner:GetInfoNum("newtphysgun_wheelspeed", 10), MIN_DIST), range)
 			self:SetGrabbedDist(dist)
 		end
 	end
